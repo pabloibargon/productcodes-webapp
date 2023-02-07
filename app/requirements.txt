@@ -1,0 +1,5 @@
+flask
+numpy
+galois
+pillow
+scipy

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="{{ url_for('static',filename='fabric.js')}}"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    </head>
+<body>
+    <img src="{{ url_for('static',filename=filename) }}", id="uploaded_image", hidden>
+
+    <style>
+        label {
+          display: inline-block; width: 130px;
+        }
+        .info {
+          display: inline-block;
+          width: 25px;
+          background: #ffc;
+        }
+    </style>
+    <h1>Tu imagen ha sido codificada</h1>
+    <p>Prueba a corromper la imagen dibujando algo sobre ella y veamos si el codigo corrector puede deshacer el destrozo</p>
+
+    <canvas id="c" style="border:1px"></canvas>
+
+    <div style="display: inline-block; margin-left: 10px">
+    <button id="clear-canvas" class="btn btn-info">Borrar</button><br>
+
+    <button id="save-canvas" class="btn btn-info">Guardar</button><br>
+
+    <button id="random-noise" class="btn btn-info">Ruido aleatorio (5%)</button>
+
+    <label for="drawing-line-width">Ancho de la linea:</label>
+    <span class="info">30</span><input type="range" value="6" min="0" max="30" id="drawing-line-width"><br>
+    </div>
+    <br />
+    <br />
+    <script>
+        //Free drawing demo fabricjs.com/freedrawing
+    
+        var $ = function(id){return document.getElementById(id)};
+
+        var canvas = this.__canvas = new fabric.Canvas('c', {
+            isDrawingMode: true
+        });
+
+        var imgElement = document.getElementById('uploaded_image');
+        var imgInstance = new fabric.Image(imgElement, {
+            originX:'left',
+            originY:'top'
+        });
+        canvas.setHeight(imgInstance.height);
+        canvas.setWidth(imgInstance.width);
+        canvas.add(imgInstance);
+
+        fabric.Object.prototype.transparentCorners = false;
+
+        var drawingLineWidthEl = $('drawing-line-width'),
+            clearEl = $('clear-canvas'),
+            saveEl = $('save-canvas'),
+            noiseEl = $('random-noise');
+
+        noiseEl.onclick = function() {
+             //dividing by / last string is encoded.jpg, and the second to last is the folder we need
+            var filename = "{{filename}}".split("/").slice(-2,-1)
+            var dataURL = canvas.toDataURL({
+                format: 'png',
+                quality: 1
+            })
+            jQuery.ajax({
+                type: 'POST',
+                url: '../noise/'+filename,
+                data : {
+                    image : dataURL
+                }
+            }).done(function(response) {
+                console.log('Imagen guardada en el servidor');
+                window.location.replace('/show_image/'+filename)
+            });
+        }
+        clearEl.onclick = function() { canvas.clear(); canvas.add(imgInstance) };
+        saveEl.onclick = function() {
+            //dividing by / last string is encoded.jpg, and the second to last is the folder we need
+            var filename = "{{filename}}".split("/").slice(-2,-1)
+            var dataURL = canvas.toDataURL({
+                format: 'png',
+                quality: 1
+            })
+            jQuery.ajax({
+                type: 'POST',
+                url: '../save_image/'+filename,
+                data : {
+                    image : dataURL
+                }
+            }).done(function(response) {
+                console.log('Imagen guardada en el servidor');
+                window.location.replace('/show_result/'+filename)
+            });
+        };
+        canvas.freeDrawingBrush = new fabric['PencilBrush'](canvas);
+        
+        drawingLineWidthEl.onchange = function() {
+        canvas.freeDrawingBrush.width = parseInt(this.value, 10) || 1;
+        this.previousSibling.innerHTML = this.value;
+        };
+
+        if (canvas.freeDrawingBrush) {
+        var brush = canvas.freeDrawingBrush;
+        brush.width = parseInt(drawingLineWidthEl.value, 10) || 1;
+        }
+
+    </script>
+
+</body>
+</html>
