@@ -50,6 +50,13 @@ def upload_image():
 
             # Every image resulting from the uploaded image will be saved in /uploads/filename/
             image_dir = os.path.join(app.static_folder, app.config["UPLOAD_FOLDER"])
+            
+            #try creating uploads folder if not exist
+            try:
+                os.mkdir(image_dir)
+            except:
+                pass
+
             image_dir = os.path.join(
                 image_dir, filename
             )  # dir name filename wo extension
