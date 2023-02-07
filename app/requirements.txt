@@ -1,5 +1,5 @@
-flask
-numpy
-galois
-pillow
-scipy
+Flask==2.2.2
+numpy==1.21.0
+galois==0.3.2
+Pillow==9.3.0
+scipy==1.9.3
