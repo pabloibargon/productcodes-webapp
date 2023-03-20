@@ -1,114 +1,157 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <script src="{{ url_for('static',filename='fabric.js')}}"></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
-    </head>
-<body>
-    <img src="{{ url_for('static',filename=filename) }}", id="uploaded_image", hidden>
+{% extends "base.html" %}
 
-    <style>
-        label {
-          display: inline-block; width: 130px;
-        }
-        .info {
-          display: inline-block;
-          width: 25px;
-          background: #ffc;
-        }
-    </style>
-    <h1>Tu imagen ha sido codificada</h1>
+{% block title %}
+<h2>Tu imagen ha sido codificada</h2>
+{% endblock %}
+
+{% block content %}
+    <div style="display:none;"><canvas id="aux-canvas" style = "display : none;"></canvas></div>
     <p>Prueba a corromper la imagen dibujando algo sobre ella y veamos si el codigo corrector puede deshacer el destrozo</p>
 
-    <canvas id="c" style="border:1px"></canvas>
+    <div id="canvas-container" class="canvasd"><canvas id="c" ></canvas></div>
+    <div id="control-panel">
+        <div style="display: inline-block; margin-top: 10px;; margin-bottom :10 px">
+        <button id="clear-canvas" class="btn btn-info">Borrar</button>
 
-    <div style="display: inline-block; margin-left: 10px">
-    <button id="clear-canvas" class="btn btn-info">Borrar</button><br>
+        <button id="save-canvas" class="btn btn-info">Guardar</button>
 
-    <button id="save-canvas" class="btn btn-info">Guardar</button><br>
-
-    <button id="random-noise" class="btn btn-info">Ruido aleatorio (5%)</button>
-
-    <label for="drawing-line-width">Ancho de la linea:</label>
-    <span class="info">30</span><input type="range" value="6" min="0" max="30" id="drawing-line-width"><br>
+        <button id="random-noise" class="btn btn-info">Ruido aleatorio (2%)</button>
+        </div>
+        <div style="display: inline-block; margin-top: 10px;; margin-bottom :10 px">
+        <label for="drawing-line-width" class="slider-text">Ancho de la linea:</label>
+        <input type="range" value="3" min="1" max="10" id="drawing-line-width">
+        </div>
+        <div style="display: inline-block; margin-top: 10px;; margin-bottom :10 px">
+        <label for="random-noise-val" class="slider-text">Densidad de error:</label>
+        <input type="range" value="2" min="1" max="10" id="random-noise-val">
+        </div>
     </div>
-    <br />
-    <br />
+
+    <div id="loading-container" class="loading-container">
+        <div class="loading-icon"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
     <script>
         //Free drawing demo fabricjs.com/freedrawing
-    
+
         var $ = function(id){return document.getElementById(id)};
+        const canvascont = document.getElementById("canvas-container")
 
         var canvas = this.__canvas = new fabric.Canvas('c', {
-            isDrawingMode: true
+            isDrawingMode: true,
+            width : canvascont.clientWidth,
         });
 
-        var imgElement = document.getElementById('uploaded_image');
-        var imgInstance = new fabric.Image(imgElement, {
-            originX:'left',
-            originY:'top'
-        });
-        canvas.setHeight(imgInstance.height);
-        canvas.setWidth(imgInstance.width);
-        canvas.add(imgInstance);
+        var loading = true
+        var controlpanel = $('control-panel'),
+            loadingcont = $('loading-container');
+
+        function toggleLoading(){
+            if (loading) {
+                loading = false;
+                controlpanel.style.display = "block";
+                loadingcont.style.display = "none";
+            }else{
+                loading = true;
+                controlpanel.style.display = "none";
+                loadingcont.style.display = "block";
+            }
+        }
+
+        toggleLoading();
+
+        // filename shoul be either filename or reset
+        function resetCanvas (url) {
+            var imgInstance = fabric.Image.fromURL(url, function(bgimg) {
+                const scale_factor = canvas.width/bgimg.width;
+                bgimg.scaleToWidth(canvas.width);
+                canvas.setHeight(bgimg.height * scale_factor);
+                canvas.setBackgroundImage(bgimg, canvas.renderAll.bind(canvas));
+            });
+        }
+        resetCanvas("{{ url_for('static',filename=filename) }}");
+
+        function sendWithOriginalRes(target,reload,extra_data) {
+             //save only pencil bits
+             canvas.setBackgroundImage(null);
+            canvas.backgroundColor = 'rgba(0,0,0,0)';
+            var dataURL = canvas.toDataURL({
+                format: 'png',
+                quality: 1
+            });
+
+            var newCanvas = new fabric.Canvas("aux-canvas");
+            //original image
+            var imgInstance = fabric.Image.fromURL("{{ url_for('static',filename=filename) }}", function(bgimg) {
+                newCanvas.setWidth(bgimg.width);
+                newCanvas.setHeight(bgimg.height);
+                newCanvas.setBackgroundImage(bgimg);
+                fabric.Image.fromURL(
+                    dataURL,
+                    function (drw) {
+                        drw.scaleToWidth(newCanvas.width);
+                        newCanvas.add(drw);
+                        dataURL = newCanvas.toDataURL({
+                            format: 'png',
+                            quality: 1
+                        });
+                        jQuery.ajax({
+                            type: 'POST',
+                            url: target,
+                            data : Object.assign({image : dataURL},extra_data)
+                        }).done(function(response) {
+                            console.log('Imagen guardada en el servidor');
+                            window.location.replace(reload)
+                        });
+                    }
+                )
+            }); 
+        }
 
         fabric.Object.prototype.transparentCorners = false;
 
         var drawingLineWidthEl = $('drawing-line-width'),
             clearEl = $('clear-canvas'),
             saveEl = $('save-canvas'),
-            noiseEl = $('random-noise');
+            noiseEl = $('random-noise'),
+            noiseDensityEl = $('random-noise-val');
 
+        var noiseDensity = 2;
+        
         noiseEl.onclick = function() {
              //dividing by / last string is encoded.jpg, and the second to last is the folder we need
-            var filename = "{{filename}}".split("/").slice(-2,-1)
-            var dataURL = canvas.toDataURL({
-                format: 'png',
-                quality: 1
-            })
-            jQuery.ajax({
-                type: 'POST',
-                url: '../noise/'+filename,
-                data : {
-                    image : dataURL
-                }
-            }).done(function(response) {
-                console.log('Imagen guardada en el servidor');
-                window.location.replace('/show_image/'+filename)
-            });
+            const filename = "{{filename}}".split("/").slice(-2,-1)
+            const target = '../noise/'+filename;
+            const reload = '/show_image/'+filename;
+            sendWithOriginalRes(target,reload,{density : noiseDensity});
         }
-        clearEl.onclick = function() { canvas.clear(); canvas.add(imgInstance) };
+
+        noiseDensityEl.onchange = function() {
+            noiseDensity = parseInt(noiseDensityEl.value,10) || 1;
+            noiseEl.innerHTML = "Ruido aleatorio ("+noiseDensityEl.value+"%)";
+        }
+
+        clearEl.onclick = function() { canvas.clear(); resetCanvas("{{ url_for('static',filename=reset) }}");};
         saveEl.onclick = function() {
-            //dividing by / last string is encoded.jpg, and the second to last is the folder we need
-            var filename = "{{filename}}".split("/").slice(-2,-1)
-            var dataURL = canvas.toDataURL({
-                format: 'png',
-                quality: 1
-            })
-            jQuery.ajax({
-                type: 'POST',
-                url: '../save_image/'+filename,
-                data : {
-                    image : dataURL
-                }
-            }).done(function(response) {
-                console.log('Imagen guardada en el servidor');
-                window.location.replace('/show_result/'+filename)
-            });
+            const filename = "{{filename}}".split("/").slice(-2,-1);
+            const target = '../save_image/'+filename;
+            const reload = '/show_result/'+filename;
+            toggleLoading();
+            sendWithOriginalRes(target,reload);
         };
         canvas.freeDrawingBrush = new fabric['PencilBrush'](canvas);
         
         drawingLineWidthEl.onchange = function() {
-        canvas.freeDrawingBrush.width = parseInt(this.value, 10) || 1;
-        this.previousSibling.innerHTML = this.value;
+            canvas.freeDrawingBrush.width = parseInt(this.value, 10) || 1;
+            this.previousSibling.innerHTML = this.value;
         };
 
         if (canvas.freeDrawingBrush) {
-        var brush = canvas.freeDrawingBrush;
-        brush.width = parseInt(drawingLineWidthEl.value, 10) || 1;
+            var brush = canvas.freeDrawingBrush;
+            brush.width = parseInt(drawingLineWidthEl.value, 10) || 1;
         }
 
     </script>
-
-</body>
-</html>
+{% endblock %}
