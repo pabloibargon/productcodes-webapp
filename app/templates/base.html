@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Códigos Correctores Producto</title>
+    <link rel="stylesheet" href="{{ url_for('static',filename='/style/style.css') }}">
+  </head>
+  <body>
+    <header>
+      <h1>Códigos Correctores Producto</h1>
+    </header>
+    
+    <nav>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/upload">Subir Imagen</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+    
+    <main>
+      {% block title %} <h2>¿Qué son los códigos productos? </h2>{% endblock %}
+      {% block content %}
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor sapien id justo hendrerit, id elementum nulla pharetra. Ut suscipit sollicitudin augue sit amet hendrerit. Etiam finibus mi eu elit pharetra, sit amet dictum nulla auctor.</p>
+      <p>Sed vel ex ac sappien eleifend consequat eu nec purus. Donec eget eros quis leo venenatis ullamcorper. Aliquam efficitur placerat turpis, vitae aliquam lectus bibendum ut. Sed consectetur sapien nec libero bibendum, nec consequat nibh consequat. Integer eget pulvinar eros.</p>
+      {% endblock %}
+    </main>
+    
+    <footer>
+      <p>Pablo Ibarlucea González. 2023</p>
+    </footer>
+  </body>
+</html>
