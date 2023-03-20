@@ -1,13 +1,53 @@
-<!DOCTYPE html>
-<html>
-<body>
+{% extends "base.html" %}
 
-<p>Click on the "Choose File" button to upload a file:</p>
+{% block title %}
+  <h2>Sube tu propia imagen</h2>
+{% endblock %}
 
-<form method=post enctype="multipart/form-data">
-  <input type="file" id="myFile" name="image">
-  <input type="submit">
-</form>
+{% block content %}
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor sapien id justo hendrerit, id elementum nulla pharetra. Ut suscipit sollicitudin augue sit amet hendrerit. Etiam finibus mi eu elit pharetra, sit amet dictum nulla auctor.</p>
+<p>Sed vel ex ac sappien eleifend consequat eu nec purus. Donec eget eros quis leo venenatis ullamcorper. Aliquam efficitur placerat turpis, vitae aliquam lectus bibendum ut. Sed consectetur sapien nec libero bibendum, nec consequat nibh consequat. Integer eget pulvinar eros.</p>
 
-</body>
-</html>
+<div id="control-panel">
+  <form method="post" enctype="multipart/form-data" onsubmit="toggleLoading()">
+    <label for="myFile" class="file-label">
+      <span class="file-icon"><i class="fas fa-upload"></i></span>
+      <span class="file-name">Selecciona una imagen</span>
+    </label>
+    <input type="file" id="myFile" name="image" class="file-input" onchange="updateFileName()">
+    <button type="submit" class="file-submit">Subir y procesar</button>
+  </form>
+</div>
+
+<div id="loading-container" class="loading-container" style="display : none;">
+  <div class="loading-icon"></div>
+</div>
+
+<script>
+  function updateFileName() {
+    const fileInput = document.getElementById("myFile");
+    const fileName = document.querySelector(".file-name");
+    fileName.textContent = fileInput.files[0].name;
+  }
+
+  var loading = true
+  var controlpanel = document.getElementById('control-panel'),
+      loadingcont = document.getElementById('loading-container');
+
+  function toggleLoading(){
+      if (loading) {
+          loading = false;
+          controlpanel.style.display = "block";
+          loadingcont.style.display = "none";
+      }else{
+          loading = true;
+          controlpanel.style.display = "none";
+          loadingcont.style.display = "block";
+      }
+  }
+
+  toggleLoading();
+</script>
+
+
+{% endblock %}
