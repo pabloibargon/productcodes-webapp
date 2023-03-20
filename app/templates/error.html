@@ -1,9 +1,12 @@
-<!DOCTYPE html>
-<html>
-<body>
+{% extends "base.html" %}
+{% block header %}
+  {{ super() }}
+{% endblock %}
+{% block title %}
+  {{ super() }}
+{% endblock %}
 
-<p>Error : {{message}}</p>
-<a href="{{url}}">Atras</a>
-
-</body>
-</html>
+{% block content %}
+<h2>Error : {{message}}</h2>
+<p>a href="{{url}}">Atras</a></p>
+{% endblock %}
