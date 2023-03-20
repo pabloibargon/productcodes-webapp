@@ -6,6 +6,10 @@ import base64
 import product_codes
 
 app = Flask(__name__)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+    
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["FILENAME_FOR_ORIGINAL"] = "original"
 app.config["FILENAME_FOR_CORRUPTED"] = "corrupted.png"
@@ -26,7 +30,7 @@ def allowed_file(filename):
 
 @app.route("/")
 def hello():
-    return "Hello World!"
+    return render_template("base.html")
 
 
 @app.route("/upload", methods=["GET", "POST"])
@@ -105,8 +109,9 @@ def show_image(filename):
         ][0]
         temp_file = os.path.join(image_dir,temp_file)
     except:
-        encoded_file = os.path.join(image_dir, app.config["FILENAME_FOR_ENCODED"])
-    return render_template("show_image.html", filename=temp_file or encoded_file)
+        pass
+    encoded_file = os.path.join(image_dir, app.config["FILENAME_FOR_ENCODED"])
+    return render_template("show_image.html", filename=temp_file or encoded_file, reset = encoded_file)
 
 
 @app.route("/save_image/<filename>", methods=["POST"])
@@ -144,13 +149,8 @@ def noise(filename):
     with open(im_path, "wb") as f:
         f.write(im_bytes)
     #corrupt
-    product_codes.add_random_noise_from_path(im_path,im_dir)
+    product_codes.add_random_noise_from_path(im_path,im_dir,int(request.form.get("density"))/100)
     return "image saved on server"
-
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8000)
-
 
 @app.route("/show_result/<filename>")
 def show_result(filename):
